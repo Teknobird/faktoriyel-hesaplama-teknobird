@@ -36,7 +36,7 @@
     -webkit-font-smoothing: antialiased;
     display:flex;
     justify-content:center;
-    padding: 10px 0; /* Üst alt boşluk mobilde taşma yapmaması için hafifçe azaltıldı */
+    padding: 10px 0; /* Mobilde dikey taşmayı önlemek için boşluk optimize edildi */
   }
 
   .wrap{
@@ -239,7 +239,6 @@
   .copy-btn:hover{ color: var(--cyan); border-color: var(--cyan); }
   .copy-btn svg{ width:15px; height:15px; }
 
-  /* Kopyalandığında yeşil tik işareti geri bildirimi */
   .copy-btn.copied{ color: #2ecc71; border-color: #2ecc71; }
 
   .footer-note{
@@ -381,7 +380,7 @@
     if(e.key === 'Enter') calculate();
   });
 
-  // Geliştirilmiş, iframe içi garantili çalışan kopyalama sistemi
+  // Iframe içi garantili çalışan kopyalama fonksiyonu
   copyBtn.addEventListener('click', () => {
     const text = resultText.textContent;
     if(!text) return;
@@ -416,7 +415,6 @@
 
   function kopyalandiEfekti() {
     copyBtn.classList.add('copied');
-    // Tik simgesi için butonun içindeki SVG'yi geçici olarak değiştiriyoruz
     const eskiSvg = copyBtn.innerHTML;
     copyBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
     setTimeout(() => {
@@ -425,17 +423,24 @@
     }, 1500);
   }
 
-  // Güvenli ve kusursuz yükseklik gönderme fonksiyonu
+  // Mobilde kesilmeyi kesin olarak önleyen dinamik yükseklik fonksiyonu
   function postHeight(){
     try{
-      // Mobilde tarayıcıların ekstra piksel hatalarını önlemek için gövdenin gerçek kapladığı alanı net ölçüyoruz
-      const h = Math.ceil(document.querySelector('.wrap').offsetHeight + 25); 
-      window.parent.postMessage({ type: 'teknobird-tool-resize', height: h }, '*');
+      const card = document.querySelector('.card');
+      if (card) {
+        // Kartın gerçek yüksekliğinin üzerine 40px güvenli tampon payı ekleyerek WordPress'e bildirir
+        const h = Math.ceil(card.getBoundingClientRect().height + 40);
+        window.parent.postMessage({ type: 'teknobird-tool-resize', height: h }, '*');
+      }
     }catch(e){}
   }
   
-  window.addEventListener('load', postHeight);
-  window.addEventListener('resize', postHeight); // Mobil ekran döndürmelerinde de tetiklenmesi için
+  // Olay tetikleyicileri
+  window.addEventListener('load', () => {
+    postHeight();
+    setTimeout(postHeight, 300); // Font veya geç açılan CSS kaymalarını absorbe etmek için
+  });
+  window.addEventListener('resize', postHeight);
   new MutationObserver(postHeight).observe(document.body, { childList:true, subtree:true, attributes:true });
 })();
 </script>
