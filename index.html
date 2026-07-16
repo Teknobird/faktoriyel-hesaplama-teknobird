@@ -21,14 +21,22 @@
   }
 
   *{ box-sizing: border-box; }
-  html,body{ margin:0; padding:0; background: transparent; }
+  
+  /* Mobilde iframe içi istemsiz kaydırmaları engellemek için overflow gizlendi */
+  html,body{ 
+    margin:0; 
+    padding:0; 
+    background: transparent; 
+    overflow: hidden; 
+  }
+  
   body{
     font-family: 'Inter', sans-serif;
     color: var(--text);
     -webkit-font-smoothing: antialiased;
     display:flex;
     justify-content:center;
-    padding: 20px 0;
+    padding: 10px 0; /* Üst alt boşluk mobilde taşma yapmaması için hafifçe azaltıldı */
   }
 
   .wrap{
@@ -231,7 +239,8 @@
   .copy-btn:hover{ color: var(--cyan); border-color: var(--cyan); }
   .copy-btn svg{ width:15px; height:15px; }
 
-  .copy-btn.copied{ color: var(--cyan); border-color: var(--cyan); }
+  /* Kopyalandığında yeşil tik işareti geri bildirimi */
+  .copy-btn.copied{ color: #2ecc71; border-color: #2ecc71; }
 
   .footer-note{
     margin-top: 18px;
@@ -315,7 +324,6 @@
   }
 
   function formatWithSeparators(numStr){
-    // group from the right in 3s using thousand separator (non-locale, plain dot)
     return numStr.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   }
 
@@ -373,23 +381,61 @@
     if(e.key === 'Enter') calculate();
   });
 
+  // Geliştirilmiş, iframe içi garantili çalışan kopyalama sistemi
   copyBtn.addEventListener('click', () => {
     const text = resultText.textContent;
     if(!text) return;
-    navigator.clipboard.writeText(text).then(() => {
-      copyBtn.classList.add('copied');
-      setTimeout(() => copyBtn.classList.remove('copied'), 1400);
-    });
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => {
+        kopyalandiEfekti();
+      }).catch(() => {
+        yedekKopyala(text);
+      });
+    } else {
+      yedekKopyala(text);
+    }
   });
 
-  // auto-resize height message to parent frame if embedded via iframe
+  function yedekKopyala(text) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    document.body.appendChild(textArea);
+    textArea.select();
+    textArea.setSelectionRange(0, 99999);
+    try {
+      document.execCommand('copy');
+      kopyalandiEfekti();
+    } catch (err) {
+      alert('Kopyalanamadı, lütfen manuel seçin.');
+    }
+    document.body.removeChild(textArea);
+  }
+
+  function kopyalandiEfekti() {
+    copyBtn.classList.add('copied');
+    // Tik simgesi için butonun içindeki SVG'yi geçici olarak değiştiriyoruz
+    const eskiSvg = copyBtn.innerHTML;
+    copyBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    setTimeout(() => {
+      copyBtn.classList.remove('copied');
+      copyBtn.innerHTML = eskiSvg;
+    }, 1500);
+  }
+
+  // Güvenli ve kusursuz yükseklik gönderme fonksiyonu
   function postHeight(){
     try{
-      const h = document.documentElement.scrollHeight;
+      // Mobilde tarayıcıların ekstra piksel hatalarını önlemek için gövdenin gerçek kapladığı alanı net ölçüyoruz
+      const h = Math.ceil(document.querySelector('.wrap').offsetHeight + 25); 
       window.parent.postMessage({ type: 'teknobird-tool-resize', height: h }, '*');
     }catch(e){}
   }
+  
   window.addEventListener('load', postHeight);
+  window.addEventListener('resize', postHeight); // Mobil ekran döndürmelerinde de tetiklenmesi için
   new MutationObserver(postHeight).observe(document.body, { childList:true, subtree:true, attributes:true });
 })();
 </script>
