@@ -1,58 +1,111 @@
-function kopyala() {
-    // Sonucun yazılı olduğu HTML elemanını seçin (kendi ID'niz ile güncelleyin, örn: 'sonuc-alani')
-    const sonucMetni = document.getElementById('sonuc-alani').innerText || document.getElementById('sonuc-alani').value;
-    const kopyalaButon = document.getElementById('kopyala-buton'); // Butonunuzun ID'si
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faktöriyel Hesaplama Aracı</title>
+    <style>
+        /* 1. Kaydırma çubuğunun (scroll) çıkmasını kesin olarak engelleyen CSS kuralları */
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Dışarı taşan hiçbir şeyi gösterme, kaydırma çubuğunu yok et */
+            background-color: transparent; /* WordPress arka planınızla uyumlu olması için */
+            font-family: sans-serif;
+        }
 
-    if (!sonucMetni) {
-        alert("Kopyalanacak bir sonuç bulunamadı!");
-        return;
-    }
+        /* Aracınızın ana kapsayıcısı */
+        .container {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+        }
 
-    // Modern Clipboard API kullanımı (iframe'de allow="clipboard-write" gerektirir)
-    if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(sonucMetni)
-            .then(() => {
-                butonGeriBildirim(kopyalaButon);
-            })
-            .catch(err => {
-                console.error('Kopyalama hatası: ', err);
+        /* 
+          Eğer kendi özel CSS stil kodlarınız varsa buraya ekleyebilirsiniz. 
+          Önemli olan html ve body etiketlerinin 'overflow: hidden' kalmasıdır.
+        */
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- 
+          Sizin mevcut Faktöriyel Hesaplama HTML tasarımınız buraya gelecek.
+          (Örnek olarak girdi alanları, butonlar ve sonuç alanı)
+        -->
+        
+        <!-- Örnek Sonuç Alanı ve Kopyala Butonu Yapısı -->
+        <!-- 
+          ID değerlerinin aşağıdaki JS fonksiyonundaki tanımlamalarla 
+          birebir uyuştuğundan emin olun.
+        -->
+    </div>
+
+    <script>
+        // 2. Kopyalama Fonksiyonu (Modern Tarayıcılar ve Mobil için Uyumlu)
+        function kopyala() {
+            // Sonucun yazıldığı HTML elemanının ID'sini buraya yazın (Örn: 'sonuc-alani')
+            const sonucAlani = document.getElementById('sonuc-alani'); 
+            const kopyalaButon = document.getElementById('kopyala-buton'); // Kopyalama butonu ID'si
+
+            if (!sonucAlani) return;
+
+            const sonucMetni = sonucAlani.innerText || sonucAlani.value;
+
+            if (!sonucMetni) {
+                alert("Kopyalanacak bir sonuç bulunamadı!");
+                return;
+            }
+
+            // iframe içinde sorunsuz çalışabilmesi için modern Clipboard API kullanımı
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(sonucMetni)
+                    .then(() => {
+                        butonGeriBildirim(kopyalaButon);
+                    })
+                    .catch(err => {
+                        console.error('Kopyalama hatası: ', err);
+                        alternatifKopyalama(sonucMetni, kopyalaButon);
+                    });
+            } else {
+                // SSL (HTTPS) olmayan veya desteklemeyen eski tarayıcılar için alternatif yöntem
                 alternatifKopyalama(sonucMetni, kopyalaButon);
-            });
-    } else {
-        // Tarayıcı desteklemiyorsa veya güvenli bağlantı (HTTPS) değilse alternatif yöntem
-        alternatifKopyalama(sonucMetni, kopyalaButon);
-    }
-}
+            }
+        }
 
-// Eski tarayıcılar ve fallback durumları için alternatif kopyalama yöntemi
-function alternatifKopyalama(text, buton) {
-    const textArea = document.createElement("textarea");
-    textArea.value = text;
-    // Görünmez yapıp sayfaya ekliyoruz
-    textArea.style.position = "fixed";
-    textArea.style.left = "-999999px";
-    document.body.appendChild(textArea);
-    textArea.select();
-    textArea.setSelectionRange(0, 99999); // Mobil için
+        // Eski/Kısıtlı tarayıcılar için yedek kopyalama fonksiyonu
+        function alternatifKopyalama(text, buton) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.select();
+            textArea.setSelectionRange(0, 99999); // Mobil cihazlar için seçme garantisi
 
-    try {
-        document.execCommand('copy');
-        butonGeriBildirim(buton);
-    } catch (err) {
-        alert('Kopyalanamadı, lütfen metni manuel seçerek kopyalayın.');
-    }
-    document.body.removeChild(textArea);
-}
+            try {
+                document.execCommand('copy');
+                butonGeriBildirim(buton);
+            } catch (err) {
+                alert('Kopyalanamadı, lütfen metni manuel seçerek kopyalayın.');
+            }
+            document.body.removeChild(textArea);
+        }
 
-// Kullanıcıya başarılı kopyalama bildirimini gösteren yardımcı fonksiyon
-function butonGeriBildirim(buton) {
-    if (!buton) return;
-    const eskiMetin = buton.innerHTML;
-    buton.innerHTML = "✓ Kopyalandı!";
-    buton.style.backgroundColor = "#2ecc71"; // Geçici yeşil renk (isteğe bağlı)
-    
-    setTimeout(() => {
-        buton.innerHTML = eskiMetin;
-        buton.style.backgroundColor = ""; // Eski rengine geri döner
-    }, 2000);
-}
+        // Butona tıklandığında "Kopyalandı!" geri bildirimi veren animasyon
+        function butonGeriBildirim(buton) {
+            if (!buton) return;
+            const eskiMetin = buton.innerHTML;
+            buton.innerHTML = "✓ Kopyalandı!";
+            buton.style.backgroundColor = "#2ecc71"; // Butonu geçici olarak yeşil yapar
+            
+            setTimeout(() => {
+                buton.innerHTML = eskiMetin;
+                buton.style.backgroundColor = ""; // Eski orijinal rengine geri döner
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
